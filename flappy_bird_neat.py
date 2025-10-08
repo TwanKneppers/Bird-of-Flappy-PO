@@ -8,10 +8,8 @@ Author: meester Bart
 import pygame
 import random
 import os
-import time
 import neat
-#import visualize
-#import pickle
+import pickle
 pygame.font.init()  # init font
 
 WIN_WIDTH = 600
@@ -133,7 +131,8 @@ class Pipe():
     """
     represents a pipe object
     """
-    GAP = 200
+    GAP = 160
+    # Verandert van 200 naar 160 voor ruimte tussen buizen
     VEL = 5
 
     def __init__(self, x):
@@ -318,7 +317,7 @@ def eval_genomes(genomes, config):
     nets = []
     birds = []
     ge = []
-    
+
     for genome_id, genome in genomes:
         genome.fitness = 0
         net = neat.nn.FeedForwardNetwork.create(genome, config)
@@ -334,7 +333,8 @@ def eval_genomes(genomes, config):
 
     run = True
     while run and len(birds) > 0:
-        clock.tick(60)
+        clock.tick(100)
+        # Verandert van 60 naar 100 voor fps
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -347,7 +347,7 @@ def eval_genomes(genomes, config):
         if len(birds) > 0:
             if len(pipes) > 1 and birds[0].x > pipes[0].x + pipes[0].PIPE_TOP.get_width():
                 pipe_ind = 1
-        
+
         for x, bird in enumerate(birds):
             ge[x].fitness += 0.1
             bird.move()
@@ -363,7 +363,7 @@ def eval_genomes(genomes, config):
         add_pipe = False
         for pipe in pipes:
             pipe.move()
-            
+
             for bird in birds:
                 if pipe.collide(bird, win):
                     ge[birds.index(bird)].fitness -= 1
@@ -380,11 +380,22 @@ def eval_genomes(genomes, config):
 
         if add_pipe:
             score += 1
-            
+
             for genome in ge:
                 genome.fitness += 5
-            
+
             pipes.append(Pipe(WIN_WIDTH))
+
+        # code zodat de vogels stoppen op een score en direct de evaluate functie sluit, los van de generatie
+        # eval functie sluit als alle vogels dood zijn en de fitness hoger is dan de threshold in de config-feedforward.txt
+        if score > 1000:
+            genome.fitness = 1000
+            nets.pop(birds.index(bird))
+            ge.pop(birds.index(bird))
+            birds.pop(birds.index(bird))
+
+
+        print(genome.fitness)
 
         for r in rem:
             pipes.remove(r)
@@ -403,6 +414,7 @@ def run(config_file):
     :param config_file: location of config file
     :return: None
     """
+
     config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_file)
@@ -421,13 +433,10 @@ def run(config_file):
 
     # show final stats
     print('\nBest genome:\n{!s}'.format(winner))
-    
-    # Save the winner genome to a pickle .pkl file
-    #with open("winner.pkl", "wb") as f:
-    #    pickle.dump(winner, f)
-    #
-    #to play the endgame with only the best bird e.g.
-    #play_with_best_bird("winner.pkl", config)
+
+    # Slaat de beste vogel op in ChickenDinner.txt
+    with open("ChickenDinner.txt", "wb") as save:
+        pickle.dump(winner, save)
 
 if __name__ == '__main__':
     # Determine path to configuration file. This path manipulation is
