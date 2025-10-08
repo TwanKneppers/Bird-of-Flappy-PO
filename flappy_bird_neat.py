@@ -428,6 +428,25 @@ def bestGameDraw(win, bird, pipes, base, score):
 
     pygame.display.update()
 
+def end_screen(win):
+    """
+    display an end screen when the player loses
+    :param win: the pygame window surface
+    :return: None
+    """
+    run = True
+    text_label = END_FONT.render("Space to Quit", 1, (255,255,255))
+    while run:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                run = False
+
+        win.blit(text_label, (WIN_WIDTH/2 - text_label.get_width()/2, 500))
+        pygame.display.update()
+
+    pygame.quit()
+    quit()
+
 def bestGame(config):
     global WIN, gen
     win = WIN
@@ -488,7 +507,14 @@ def bestGame(config):
         for r in rem:
             pipes.remove(r)
 
+        if pipe.collide(bird, win):
+            break
+
+        if bird.y + bird_images[0].get_height() - 10 >= FLOOR:
+            break
+
         bestGameDraw(WIN, bird, pipes, base, score)
+    end_screen(win)
 
 def run(config_file):
     """
