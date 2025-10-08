@@ -387,8 +387,8 @@ def eval_genomes(genomes, config):
             pipes.append(Pipe(WIN_WIDTH))
 
         # code zodat de vogels stoppen op een score en direct de evaluate functie sluit, los van de generatie
-        # eval functie sluit als alle vogels dood zijn en de fitness hoger is dan de threshold in de config-feedforward.txt
-        if score > 1000:
+        # eval functie loop sluit als alle vogels dood zijn en de fitness hoger is dan de threshold in de config-feedforward.txt
+        if score > 25:
             genome.fitness = 1000
             nets.pop(birds.index(bird))
             ge.pop(birds.index(bird))
@@ -407,6 +407,9 @@ def eval_genomes(genomes, config):
                 birds.pop(birds.index(bird))
 
         draw_window(WIN, birds, pipes, base, score, gen, pipe_ind)
+
+def bestGame():
+    print("It's Alive!")
 
 def run(config_file):
     """
@@ -428,15 +431,29 @@ def run(config_file):
     p.add_reporter(stats)
     #p.add_reporter(neat.Checkpointer(5))
 
-    # Run for up to 50 generations.
-    winner = p.run(eval_genomes, 50)
+    keuzeVraag = input("Typ 0 om te trainen, typ 1 om de beste vogel te laten spelen")
+    while (keuzeVraag != "0" and keuzeVraag != "1"):
+        keuzeVraag = input("Typ 0 om te trainen, typ 1 om de beste vogel te laten spelen")
 
-    # show final stats
-    print('\nBest genome:\n{!s}'.format(winner))
+    if (keuzeVraag == "0"):
+        # Run for up to 50 generations.
+        winner = p.run(eval_genomes, 50)
 
-    # Slaat de beste vogel op in ChickenDinner.txt
-    with open("ChickenDinner.txt", "wb") as save:
-        pickle.dump(winner, save)
+        # show final stats
+        print('\nBest genome:\n{!s}'.format(winner))
+
+        # Slaat de beste vogel op in ChickenDinner.txt
+        with open("ChickenDinner.txt", "wb") as save:
+            pickle.dump(winner, save)
+    elif (keuzeVraag == "1" and os.path.isfile("ChickenDinner.txt") == False):
+        print("Er bestaat geen beste vogel, probeer eerst te trainen")
+        quit()
+    elif (keuzeVraag == "1" and os.path.getsize("ChickenDinner.txt") == 0):
+        print("Er bestaat geen beste vogel, probeer eerst te trainen")
+        quit()
+    elif (keuzeVraag == "1"):
+        bestGame()
+
 
 if __name__ == '__main__':
     # Determine path to configuration file. This path manipulation is
