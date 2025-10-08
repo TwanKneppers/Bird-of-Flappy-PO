@@ -388,14 +388,11 @@ def eval_genomes(genomes, config):
 
         # code zodat de vogels stoppen op een score en direct de evaluate functie sluit, los van de generatie
         # eval functie loop sluit als alle vogels dood zijn en de fitness hoger is dan de threshold in de config-feedforward.txt
-        if score > 25:
+        if score > 250:
             genome.fitness = 1000
             nets.pop(birds.index(bird))
             ge.pop(birds.index(bird))
             birds.pop(birds.index(bird))
-
-
-        print(genome.fitness)
 
         for r in rem:
             pipes.remove(r)
@@ -408,8 +405,90 @@ def eval_genomes(genomes, config):
 
         draw_window(WIN, birds, pipes, base, score, gen, pipe_ind)
 
-def bestGame():
-    print("It's Alive!")
+def bestGameDraw(win, bird, pipes, base, score):
+    """
+    draws the windows for the main game loop
+    :param win: pygame window surface
+    :param bird: a Bird object
+    :param pipes: List of pipes
+    :param score: score of the game (int)
+    :return: None
+    """
+    win.blit(bg_img, (0,0))
+
+    for pipe in pipes:
+        pipe.draw(win)
+
+    base.draw(win)
+    bird.draw(win)
+
+    # score
+    score_label = STAT_FONT.render("Score: " + str(score),1,(255,255,255))
+    win.blit(score_label, (WIN_WIDTH - score_label.get_width() - 15, 10))
+
+    pygame.display.update()
+
+def bestGame(config):
+    global WIN, gen
+    win = WIN
+    gen += 1
+
+    score = 0
+    bird = Bird(230,350)
+
+    with open("ChickenDinner.txt", "rb") as save:
+       bestBird = pickle.load(save)
+
+    net = neat.nn.FeedForwardNetwork.create(bestBird, config)
+
+    base = Base(FLOOR)
+    pipes = [Pipe(700)]
+    score = 0
+
+    clock = pygame.time.Clock()
+
+    run = True
+    while run:
+        clock.tick(100)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+                pygame.quit()
+                quit()
+                break
+
+        pipe_ind = 0
+        if len(pipes) > 1 and bird.x > pipes[0].x + pipes[0].PIPE_TOP.get_width():
+            pipe_ind = 1
+
+        bird.move()
+        output = net.activate((bird.y, abs(bird.y - pipes[pipe_ind].height), abs(bird.y - pipes[pipe_ind].bottom)))
+        if output[0] > 0.5:
+            bird.jump()
+
+        base.move()
+
+        rem = []
+        add_pipe = False
+        for pipe in pipes:
+            pipe.move()
+
+            if pipe.x + pipe.PIPE_TOP.get_width() < 0:
+                rem.append(pipe)
+
+            if not pipe.passed and pipe.x < bird.x:
+                pipe.passed = True
+                add_pipe = True
+
+        if add_pipe:
+            score += 1
+            pipes.append(Pipe(WIN_WIDTH))
+
+        for r in rem:
+            pipes.remove(r)
+
+        bestGameDraw(WIN, bird, pipes, base, score)
 
 def run(config_file):
     """
@@ -452,7 +531,7 @@ def run(config_file):
         print("Er bestaat geen beste vogel, probeer eerst te trainen")
         quit()
     elif (keuzeVraag == "1"):
-        bestGame()
+        bestGame(config)
 
 
 if __name__ == '__main__':
