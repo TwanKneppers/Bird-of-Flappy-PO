@@ -303,39 +303,49 @@ def draw_window(win, birds, pipes, base, score, gen, pipe_ind):
 
     pygame.display.update()
 
-
+# Deze functie evalueert de vogels en geeft ze een fitness score
 def eval_genomes(genomes, config):
     """
     runs the simulation of the current population of
     birds and sets their fitness based on the distance they
     reach in the game.
     """
+    # win is vereist voor pygame
     global WIN, gen
     win = WIN
+    # Elke keer dat een nieuwe generatie getest wordt gaat dit 1 omhoog
     gen += 1
 
+    # In deze arrays worden de netwerken, vogels en genomes opgeslagen met een index, zo hoort de net bij index 1 bij het vogeltje op index 1 en het genome op index 1
     nets = []
     birds = []
     ge = []
 
+    # Deze for loop maakt vogels, netwerken en de fitness van genomes aan en zet ze in de correcte array
     for genome_id, genome in genomes:
         genome.fitness = 0
+        # In de variabele net wordt een netwerk opgeslagen met de genome en config als blauwdruk opgeslagen
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         nets.append(net)
         birds.append(Bird(230,350))
         ge.append(genome)
 
+    # In deze variabele worden de vloer (base), pijpen en score opgeslagen
     base = Base(FLOOR)
     pipes = [Pipe(700)]
     score = 0
 
+    # Dit is een object dat de verlopen tijd per frame bijhoudt
     clock = pygame.time.Clock()
 
     run = True
+    # Deze while loop bevat de main game loop en blijft lopen zolang run true is en er vogeltjes over zijn
     while run and len(birds) > 0:
+        # Dit stelt een limiet op het maximum fps met behulp van de verlopen tijd sinds het vorige frame
         clock.tick(100)
-        # Verandert van 60 naar 100 voor fps
+        # Verandert van 60 naar 100 voor meer fps
 
+        # Als app gesloten wordt zorgt deze code ervoor dat ook alles van pygame sluit
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -343,27 +353,38 @@ def eval_genomes(genomes, config):
                 quit()
                 break
 
+        
         pipe_ind = 0
+        # Als er nog vogels leven
         if len(birds) > 0:
+            # Als er een pijp in de pipes array zit en het vogeltje voorbij de pijp is, dan wordt vanaf hier naar de volgende pijp in de array gekeken door middle van pipe_ind
             if len(pipes) > 1 and birds[0].x > pipes[0].x + pipes[0].PIPE_TOP.get_width():
                 pipe_ind = 1
 
+        # Leest de vogels met hun index af uit de birds array
         for x, bird in enumerate(birds):
+            # Verhoogt de fitness van alle nog levende vogels en beweegt ze
             ge[x].fitness += 0.1
             bird.move()
 
+            # Geeft data aan het neural net en slaat de uitvoer op
             output = nets[birds.index(bird)].activate((bird.y, abs(bird.y - pipes[pipe_ind].height), abs(bird.y - pipes[pipe_ind].bottom)))
 
+            # Kijkt of de output van het neural net groter is dan de thresholdvalue, zo ja, dan springt de vogel
             if output[0] > 0.5:
                 bird.jump()
 
+        # Beweegt de vloer
         base.move()
-
+ 
         rem = []
         add_pipe = False
+        # Voor elke pijp  in de array pipes
         for pipe in pipes:
+            # Beweegt de pijp
             pipe.move()
 
+            # Deze for loop kijkt voor elke vogel of hij een pijp aanraakt, zo ja, dan gaat hij dood
             for bird in birds:
                 if pipe.collide(bird, win):
                     ge[birds.index(bird)].fitness -= 1
@@ -371,19 +392,25 @@ def eval_genomes(genomes, config):
                     ge.pop(birds.index(bird))
                     birds.pop(birds.index(bird))
 
+            # Als de pijp links buiten het scherm is wordt hij aan de verwijder (rem) array toegevoegd
             if pipe.x + pipe.PIPE_TOP.get_width() < 0:
                 rem.append(pipe)
 
+            # Als de vogels de pijp voorbij zijn, dan wordt de variabele om een nieuw toe te voegen (add_pipe) op true gezet
             if not pipe.passed and pipe.x < bird.x:
                 pipe.passed = True
                 add_pipe = True
 
+        # Als de vogels voorbij de pijp zijn
         if add_pipe:
+            # Score gaat omhoog met 1
             score += 1
 
+            # De fitness van de genome gaat omhoog
             for genome in ge:
                 genome.fitness += 5
 
+            # Een nieuwe pijp wordt aan de array toegevoegd
             pipes.append(Pipe(WIN_WIDTH))
 
         # code zodat de vogels stoppen op een score en direct de evaluate functie sluit, los van de generatie
@@ -394,17 +421,21 @@ def eval_genomes(genomes, config):
             ge.pop(birds.index(bird))
             birds.pop(birds.index(bird))
 
+        # Elke pijp in de verwijder (rem) array wordt verwijderd
         for r in rem:
             pipes.remove(r)
 
+        # Als een vogel de grond raakt gaat hij dood
         for bird in birds:
             if bird.y + bird.img.get_height() - 10 >= FLOOR or bird.y < -50:
                 nets.pop(birds.index(bird))
                 ge.pop(birds.index(bird))
                 birds.pop(birds.index(bird))
 
+        # De functie om het beeld te tekenen wordt aangeroepen
         draw_window(WIN, birds, pipes, base, score, gen, pipe_ind)
 
+# commentaar voor hele functie
 def bestGameDraw(win, bird, pipes, base, score):
     """
     draws the windows for the main game loop
@@ -428,6 +459,7 @@ def bestGameDraw(win, bird, pipes, base, score):
 
     pygame.display.update()
 
+# commentaar voor hele functie
 def end_screen(win):
     """
     display an end screen when the player loses
@@ -447,6 +479,7 @@ def end_screen(win):
     pygame.quit()
     quit()
 
+# commentaar voor hele functie
 def bestGame(config):
     global WIN, gen
     win = WIN
@@ -468,7 +501,7 @@ def bestGame(config):
 
     run = True
     while run:
-        clock.tick(100)
+        clock.tick(1000)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -536,6 +569,8 @@ def run(config_file):
     p.add_reporter(stats)
     #p.add_reporter(neat.Checkpointer(5))
 
+
+    # hier
     keuzeVraag = input("Typ 0 om te trainen, typ 1 om de beste vogel te laten spelen")
     while (keuzeVraag != "0" and keuzeVraag != "1"):
         keuzeVraag = input("Typ 0 om te trainen, typ 1 om de beste vogel te laten spelen")
@@ -558,6 +593,7 @@ def run(config_file):
         quit()
     elif (keuzeVraag == "1"):
         bestGame(config)
+    # tot hier commentaar
 
 
 if __name__ == '__main__':
