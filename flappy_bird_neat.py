@@ -428,7 +428,7 @@ def eval_genomes(genomes, config):
             # code zodat de vogels stoppen op een score en direct de evaluate functie sluit, los van de generatie
             # eval functie loop sluit als alle vogels dood zijn en de fitness hoger is dan de threshold in de config-feedforward.txt
             if score > 150:
-                genome.fitness = 1000
+                ge[birds.index(bird)].fitness = 1000
                 nets.pop(birds.index(bird))
                 ge.pop(birds.index(bird))
                 birds.pop(birds.index(bird))
@@ -651,3 +651,4 @@ if __name__ == '__main__':
     config_path = os.path.join(local_dir, 'config-feedforward.txt')
     run(config_path)
     pygame.quit()
+
