@@ -413,13 +413,6 @@ def eval_genomes(genomes, config):
             # Een nieuwe pijp wordt aan de array toegevoegd
             pipes.append(Pipe(WIN_WIDTH))
 
-        # code zodat de vogels stoppen op een score en direct de evaluate functie sluit, los van de generatie
-        # eval functie loop sluit als alle vogels dood zijn en de fitness hoger is dan de threshold in de config-feedforward.txt
-        if score > 150:
-            genome.fitness = 1000
-            nets.pop(birds.index(bird))
-            ge.pop(birds.index(bird))
-            birds.pop(birds.index(bird))
 
         # Elke pijp in de verwijder (rem) array wordt verwijderd
         for r in rem:
@@ -428,6 +421,14 @@ def eval_genomes(genomes, config):
         # Als een vogel de grond raakt gaat hij dood
         for bird in birds:
             if bird.y + bird.img.get_height() - 10 >= FLOOR or bird.y < -50:
+                nets.pop(birds.index(bird))
+                ge.pop(birds.index(bird))
+                birds.pop(birds.index(bird))
+
+            # code zodat de vogels stoppen op een score en direct de evaluate functie sluit, los van de generatie
+            # eval functie loop sluit als alle vogels dood zijn en de fitness hoger is dan de threshold in de config-feedforward.txt
+            if score > 150:
+                genome.fitness = 1000
                 nets.pop(birds.index(bird))
                 ge.pop(birds.index(bird))
                 birds.pop(birds.index(bird))
