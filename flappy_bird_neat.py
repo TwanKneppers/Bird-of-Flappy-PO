@@ -345,7 +345,7 @@ def eval_genomes(genomes, config):
         clock.tick(100)
         # Verandert van 60 naar 100 voor meer fps
 
-        # Als app gesloten wordt zorgt deze code ervoor dat ook alles van pygame sluit
+        # Als de app gesloten wordt zorgt deze code ervoor dat ook alles van pygame sluit
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -357,7 +357,7 @@ def eval_genomes(genomes, config):
         pipe_ind = 0
         # Als er nog vogels leven
         if len(birds) > 0:
-            # Als er een pijp in de pipes array zit en het vogeltje voorbij de pijp is, dan wordt vanaf hier naar de volgende pijp in de array gekeken door middle van pipe_ind
+            # Als er een pijp in de pipes array zit en het vogeltje voorbij de pijp is, dan wordt vanaf hier naar de volgende pijp in de array gekeken door middel van pipe_ind
             if len(pipes) > 1 and birds[0].x > pipes[0].x + pipes[0].PIPE_TOP.get_width():
                 pipe_ind = 1
 
@@ -415,7 +415,7 @@ def eval_genomes(genomes, config):
 
         # code zodat de vogels stoppen op een score en direct de evaluate functie sluit, los van de generatie
         # eval functie loop sluit als alle vogels dood zijn en de fitness hoger is dan de threshold in de config-feedforward.txt
-        if score > 250:
+        if score > 150:
             genome.fitness = 1000
             nets.pop(birds.index(bird))
             ge.pop(birds.index(bird))
@@ -435,7 +435,7 @@ def eval_genomes(genomes, config):
         # De functie om het beeld te tekenen wordt aangeroepen
         draw_window(WIN, birds, pipes, base, score, gen, pipe_ind)
 
-# commentaar voor hele functie
+# Deze functie zorgt ervoor dat de best bird game afgebeeld wordt
 def bestGameDraw(win, bird, pipes, base, score):
     """
     draws the windows for the main game loop
@@ -445,64 +445,82 @@ def bestGameDraw(win, bird, pipes, base, score):
     :param score: score of the game (int)
     :return: None
     """
+    # Dit tekent de achtergrond
     win.blit(bg_img, (0,0))
 
+    # Dit tekent alle pijpen in de pipes array
     for pipe in pipes:
         pipe.draw(win)
 
+    # Deze functies worden aangeroepen om de grond (base) en de vogel (bird) te tekenen
     base.draw(win)
     bird.draw(win)
 
-    # score
+    # Hiermee wordt de score afgebeeld
     score_label = STAT_FONT.render("Score: " + str(score),1,(255,255,255))
     win.blit(score_label, (WIN_WIDTH - score_label.get_width() - 15, 10))
 
+    # Deze functie update het hele scherm met de wijziginen die met de code hierboven worden afgebeeld
     pygame.display.update()
 
-# commentaar voor hele functie
+# Hier wordt het game over scherm getekend
 def end_screen(win):
     """
     display an end screen when the player loses
     :param win: the pygame window surface
     :return: None
     """
+    # Run op true zetten zorgt ervoor dat er weer een 'game loop' plaats kan vinden
     run = True
+    # Dit vult een variabele met een uitleg tekst
     text_label = END_FONT.render("Space to Quit", 1, (255,255,255))
+    # Deze while loop is de nieuwe 'game loop'
     while run:
+        # Als er een knop op het toetsenbord wordt ingedrukt sluit de while loop
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 run = False
 
+        # Dit tekent de tekst die eerder werdt opgeslagen
         win.blit(text_label, (WIN_WIDTH/2 - text_label.get_width()/2, 500))
+        # Deze functie update het scherm met de wijzigingen die met de code hierboven worden afgebeeld
         pygame.display.update()
 
+    # De window wordt gesloten en de code stopt
     pygame.quit()
     quit()
 
-# commentaar voor hele functie
+# Deze code speelt het beste vogeltje af
 def bestGame(config):
-    global WIN, gen
+    # win is vereist voor pygame
+    global WIN
     win = WIN
-    gen += 1
 
+    # De score en en vogel worden aangemaakt en in een variabele gezet
     score = 0
     bird = Bird(230,350)
 
+    # Het vogeltje opgeslagen in ChickenDinner.txt wordt hier opgehaald en in een variabele gezet
     with open("ChickenDinner.txt", "rb") as save:
        bestBird = pickle.load(save)
 
+    # Het neurale net van het beste vogeltje wordt aangemaakt
     net = neat.nn.FeedForwardNetwork.create(bestBird, config)
 
+    # De vloer en pijpen worden aangemaakt
     base = Base(FLOOR)
     pipes = [Pipe(700)]
-    score = 0
 
+    # Dit is een object dat de verlopen tijd per frame bijhoudt
     clock = pygame.time.Clock()
 
     run = True
+    # Deze while loop bevat de main game loop
     while run:
-        clock.tick(1000)
+        # Dit stelt een limiet op het maximum fps met behulp van de verlopen tijd sinds het vorige frame
+        clock.tick(100)
 
+        # Als de app gesloten wordt zorgt deze code ervoor dat ook alles van pygame sluit
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -511,42 +529,62 @@ def bestGame(config):
                 break
 
         pipe_ind = 0
+        # Als er een pijp in de pipes array zit en het vogeltje voorbij de pijp is, dan wordt vanaf hier naar de volgende pijp in de array gekeken door middel van pipe_ind
         if len(pipes) > 1 and bird.x > pipes[0].x + pipes[0].PIPE_TOP.get_width():
             pipe_ind = 1
 
+        # Beweegt het vogeltje
         bird.move()
+
+        # Geeft data aan het neural net en slaat de uitvoer op
         output = net.activate((bird.y, abs(bird.y - pipes[pipe_ind].height), abs(bird.y - pipes[pipe_ind].bottom)))
+
+        # Kijkt of de output van het neural net groter is dan de thresholdvalue, zo ja, dan springt de vogel
         if output[0] > 0.5:
             bird.jump()
 
+        # Beweegt de vloer
         base.move()
 
         rem = []
         add_pipe = False
+        # Voor elke pijp  in de array pipes
         for pipe in pipes:
+            # Beweegt de pijp
             pipe.move()
 
+            # Als de pijp links buiten het scherm is wordt hij aan de verwijder (rem) array toegevoegd
             if pipe.x + pipe.PIPE_TOP.get_width() < 0:
                 rem.append(pipe)
 
+             # Als de vogel de pijp voorbij is, dan wordt de variabele om een nieuw toe te voegen (add_pipe) op true gezet
             if not pipe.passed and pipe.x < bird.x:
                 pipe.passed = True
                 add_pipe = True
 
+         # Als de vogels voorbij de pijp zijn
         if add_pipe:
+            # Score gaat omhoog met 1
             score += 1
+            
+            # Een nieuwe pijp wordt aan de array toegevoegd
             pipes.append(Pipe(WIN_WIDTH))
 
+        # Elke pijp in de verwijder (rem) array wordt verwijderd
         for r in rem:
             pipes.remove(r)
 
+        # Als de vogel een pijp raakt, dan stopt de game loop
         if pipe.collide(bird, win):
             break
 
+        # Als de vogel de vloer raaktstopt de gameloop
         if bird.y + bird_images[0].get_height() - 10 >= FLOOR:
             break
 
+        # De functie om het beeld te tekenen wordt aangeroepen
         bestGameDraw(WIN, bird, pipes, base, score)
+    # De functie om het game over scherm te tekenen wordt aangeroepen
     end_screen(win)
 
 def run(config_file):
@@ -570,30 +608,38 @@ def run(config_file):
     #p.add_reporter(neat.Checkpointer(5))
 
 
-    # hier
+    # De gebruiker wordt gevraagd of die een vogel wilt trainen of afspelen
     keuzeVraag = input("Typ 0 om te trainen, typ 1 om de beste vogel te laten spelen")
+
+    # Als er geen correct antwoord gegeven is wordt de vraag opnieuw gesteld
     while (keuzeVraag != "0" and keuzeVraag != "1"):
         keuzeVraag = input("Typ 0 om te trainen, typ 1 om de beste vogel te laten spelen")
 
+    # Als de gebruiker wilt trainen
     if (keuzeVraag == "0"):
-        # Run for up to 50 generations.
+        # De train functie wordt maximaal 50 keer aangeroepen en de beste vogel wordt opgeslagen in winner
         winner = p.run(eval_genomes, 50)
 
-        # show final stats
+        # De statistieken van de beste vogel worden geprint in de console
         print('\nBest genome:\n{!s}'.format(winner))
 
         # Slaat de beste vogel op in ChickenDinner.txt
         with open("ChickenDinner.txt", "wb") as save:
             pickle.dump(winner, save)
+
+    # Als de gebruiker een vogel wilt afspelen, maar er geen vogel bestand bestaat, dan sluit het programma en wordt de gebruiker verteld om een vogel te trainen
     elif (keuzeVraag == "1" and os.path.isfile("ChickenDinner.txt") == False):
         print("Er bestaat geen beste vogel, probeer eerst te trainen")
         quit()
+
+    # Als de gebruiker een vogel wilt afspelen, maar het vogel bestand leeg is, dan sluit het programma en wordt de gebruiker verteld om een vogel te trainen
     elif (keuzeVraag == "1" and os.path.getsize("ChickenDinner.txt") == 0):
         print("Er bestaat geen beste vogel, probeer eerst te trainen")
         quit()
+
+    # Als de gebruiker een vogel wilt afspelen, wordt de afspeel functie aangeroepen
     elif (keuzeVraag == "1"):
         bestGame(config)
-    # tot hier commentaar
 
 
 if __name__ == '__main__':
